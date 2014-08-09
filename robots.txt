@@ -1,0 +1,4 @@
+User-agent: *
+Disallow: 
+
+Sitemap: http://p5k6.github.io/sitemap.xml 

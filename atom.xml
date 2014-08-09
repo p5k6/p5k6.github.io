@@ -1,99 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
 
-<!DOCTYPE html>
-<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
-<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
-<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
-<head>
-  <meta charset="utf-8">
-  <title>YATB (Yet another tech blog)</title>
-  <meta name="author" content="Josh Stanfield">
-
-  
-  <meta name="description" content="Intro One problem I have encountered in my time working with &ldquo;big data&rdquo; has been data quality issues.
-There have been many times where I &hellip;">
-  
-
-  <!-- http://t.co/dKP3o1e -->
-  <meta name="HandheldFriendly" content="True">
-  <meta name="MobileOptimized" content="320">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-
-  
-  <link rel="canonical" href="http://p5k6.github.io">
-  <link href="/favicon.png" rel="icon">
-  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
-  <link href="/atom.xml" rel="alternate" title="YATB (Yet another tech blog)" type="application/atom+xml">
-  <script src="/javascripts/modernizr-2.0.js"></script>
-  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
-  <script src="/javascripts/octopress.js" type="text/javascript"></script>
-  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
-<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
-<link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
-
-  
-
-</head>
-
-<body   >
-  <header role="banner"><hgroup>
-  <h1><a href="/">YATB (Yet another tech blog)</a></h1>
-  
-</hgroup>
-
-</header>
-  <nav role="navigation"><ul class="subscription" data-subscription="rss">
-  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
-  
-</ul>
-  
-<form action="https://www.google.com/search" method="get">
-  <fieldset role="search">
-    <input type="hidden" name="q" value="site:p5k6.github.io" />
-    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
-  </fieldset>
-</form>
-  
-<ul class="main-navigation">
-  <li><a href="/">Blog</a></li>
-  <li><a href="/blog/archives">Archives</a></li>
-</ul>
-
-</nav>
-  <div id="main">
-    <div id="content">
-      <div class="blog-index">
-  
-  
-  
-    <article>
-      
-  <header>
+  <title><![CDATA[YATB (Yet another tech blog)]]></title>
+  <link href="http://p5k6.github.io/atom.xml" rel="self"/>
+  <link href="http://p5k6.github.io/"/>
+  <updated>2014-08-09T14:28:23-06:00</updated>
+  <id>http://p5k6.github.io/</id>
+  <author>
+    <name><![CDATA[Josh Stanfield]]></name>
     
-      <h1 class="entry-title"><a href="/blog/2014/08/09/understanding-your-geoip-data/">Understanding Your Geoip Data</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
 
   
-
-
-<time datetime="2014-08-09T13:31:18-06:00" pubdate data-updated="true">Aug 9<sup>th</sup>, 2014</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h3>Intro</h3>
+  <entry>
+    <title type="html"><![CDATA[Understanding Your Geoip Data]]></title>
+    <link href="http://p5k6.github.io/blog/2014/08/09/understanding-your-geoip-data/"/>
+    <updated>2014-08-09T13:31:18-06:00</updated>
+    <id>http://p5k6.github.io/blog/2014/08/09/understanding-your-geoip-data</id>
+    <content type="html"><![CDATA[<h3>Intro</h3>
 
 <p>One problem I have encountered in my time working with &ldquo;big data&rdquo; has been data quality issues.
 There have been many times where I would need to provide some form of data cleansing to some data used in a query, or help out data scientists to clean up some data used in one of their models.
@@ -154,14 +79,14 @@ This seems like a somewhat unusual place for 6.6% of wikipedia edits to occur.</
 <p>Here&rsquo;s a couple of very quick and dirty heatmaps of GeoIP locations that hopefully illustrate the issue.
  The before image contains (38,-97), the after image removes these points from the dataset.</p>
 
-<iframe style="width:100%;height: 500px" src='/presentations/kansas/slider.html' frameborder="0"> </iframe>
+<iframe style="width:100%;height: 500px" src='http://p5k6.github.io/presentations/kansas/slider.html' frameborder="0"> </iframe>
 
 
 <h6>Heatmap links</h6>
 
-<p><a href="/presentations/kansas/google1.html">With (38, -97)</a></p>
+<p><a href="http://p5k6.github.io/presentations/kansas/google1.html">With (38, -97)</a></p>
 
-<p><a href="/presentations/kansas/google2.html">Without</a></p>
+<p><a href="http://p5k6.github.io/presentations/kansas/google2.html">Without</a></p>
 
 <p>If you look closely at the center of kansas, you&rsquo;ll see either a huge heat cluster northeast of Wichita, or none, depending on where the slider is.
 In the first image, this cluster is the largest in the country. Which is crazy.</p>
@@ -210,97 +135,7 @@ In the first image, this cluster is the largest in the country. Which is crazy.<
 <hr />
 
 <p>This post mentions GeoLite data created by MaxMind, available from <a href="http://www.maxmind.com">MaxMind</a></p>
-</div>
+]]></content>
+  </entry>
   
-  
-
-
-    </article>
-  
-  <div class="pagination">
-    
-    <a href="/blog/archives">Blog Archives</a>
-    
-  </div>
-</div>
-<aside class="sidebar">
-  
-    <section>
-  <h1>Recent Posts</h1>
-  <ul id="recent_posts">
-    
-      <li class="post">
-        <a href="/blog/2014/08/09/understanding-your-geoip-data/">Understanding Your Geoip Data</a>
-      </li>
-    
-  </ul>
-</section>
-
-<section>
-  <h1>GitHub Repos</h1>
-  <ul id="gh_repos">
-    <li class="loading">Status updating&#8230;</li>
-  </ul>
-  
-  <a href="https://github.com/p5k6">@p5k6</a> on GitHub
-  
-  <script type="text/javascript">
-    $(document).ready(function(){
-        if (!window.jXHR){
-            var jxhr = document.createElement('script');
-            jxhr.type = 'text/javascript';
-            jxhr.src = '/javascripts/libs/jXHR.js';
-            var s = document.getElementsByTagName('script')[0];
-            s.parentNode.insertBefore(jxhr, s);
-        }
-
-        github.showRepos({
-            user: 'p5k6',
-            count: ,
-            skip_forks: ,
-            target: '#gh_repos'
-        });
-    });
-  </script>
-  <script src="/javascripts/github.js" type="text/javascript"> </script>
-</section>
-
-
-
-
-
-  
-</aside>
-
-    </div>
-  </div>
-  <footer role="contentinfo"><p>
-  Copyright &copy; 2014 - Josh Stanfield -
-  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
-</p>
-
-</footer>
-  
-
-
-
-
-
-
-
-  <script type="text/javascript">
-    (function(){
-      var twitterWidgets = document.createElement('script');
-      twitterWidgets.type = 'text/javascript';
-      twitterWidgets.async = true;
-      twitterWidgets.src = '//platform.twitter.com/widgets.js';
-      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
-    })();
-  </script>
-
-
-
-
-
-</body>
-</html>
+</feed>
