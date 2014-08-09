@@ -1,0 +1,111 @@
+---
+layout: post
+title: "Understanding Your Geoip Data"
+date: 2014-08-09 13:31:18 -0600
+comments: true
+author: <a href="http://twitter.com/p5k6">Josh Stanfield</a>
+categories: data-visualization data-analysis
+---
+
+### Intro
+
+One problem I have encountered in my time working with "big data" has been data quality issues.
+There have been many times where I would need to provide some form of data cleansing to some data used in a query, or help out data scientists to clean up some data used in one of their models. 
+This post addresses one form of data cleansing I have to perform with some regularity; I call it "The Kansas problem". 
+
+The problem is that the geolocation data returned from a GeoIP lookup returns the GPS coordinates of (38.0, -97.0) as the location for "US"; this gives a false impression of the precision of the data point returned, relative to the intended accuracy (somewhere within the US).
+The accuracy can be somewhat imputed from the additional metadata contained within the geoip_locations table from MaxMind, but it is not explicitly stated.
+This issue is not directly documented in the source of the data used, and is little discussed online as near as I can tell, so I thought it would be useful to do a quick blog post.
+
+### Data Sources
+
+The source data I have used in the past is a free database from MaxMind [GeoLite database](http://dev.maxmind.com/geoip/legacy/geolite/). 
+This database provides lookups using an input of an IP address, and returns a set of GPS coordinates; at a high level, MaxMind provides you with data to perform `[lat, long] = f(IP_ADDR)`.
+The accuracy of the geolite database is mentioned online [on MaxMind's website](http://www.maxmind.com/en/geolite_city_accuracy)
+The database is reasonably accurate (approximately 78% match in the US is accurate to within 40 km).
+
+For the input IP addresses, I grabbed 50000 IP addresses from the list of Wikipedia revisions from April 2011. 
+These are all anonymous edits (as anonymous edits leave IP address rather than a username in the edit history). 
+I then translated the IPs to 32-bit integers, and looked up the location_id from MaxMind. 
+Using the location_id, I am then able to pull the GPS coordinates, and did so for US locations (for demonstration purposes).
+This dataset contained 28016 entries, of which 1848 entries resolved to (38.0, -97.0), or approximately 6.6% of the entries. 
+
+### What the data tells us
+If you happen to look up (38.0, -97.0) on google maps, you won't really find much there (see below). 
+Essentially you're 42 miles from wichita (or 27 miles as the crow flies). 
+The decimal points within the gps coordinates would imply that the data is accurate to within approximately 11.1 km (or approximately 6.89 miles). (link to [Stack Overflow link on GPS precision](http://gis.stackexchange.com/questions/8650/how-to-measure-the-accuracy-of-latitude-and-longitude)).
+
+This level of precision *could* include the town of [Potwin, KS](http://en.wikipedia.org/wiki/Potwin,_Kansas) (Population 449), but is out of range of [Whitewater, KS](http://en.wikipedia.org/wiki/Whitewater,_KS) (Population 718), the only other town within the ~7 Mile radius of (38.0, -97.0).
+This seems like a somewhat unusual place for 6.6% of wikipedia edits to occur.
+
+<iframe width="425" height="350" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src="https://maps.google.com/maps?t=m&amp;hl=en-US&amp;gl=US&amp;mapclient=embed&amp;q=38%C2%B000'00.0%22N+97%C2%B000'00.0%22W&amp;ie=UTF8&amp;source=embed&amp;ll=38,-97&amp;spn=2.441283,6.468201&amp;z=9&amp;output=embed"></iframe><br /><small><a href="https://maps.google.com/maps?t=m&amp;hl=en-US&amp;gl=US&amp;mapclient=embed&amp;q=38%C2%B000'00.0%22N+97%C2%B000'00.0%22W&amp;ie=UTF8&amp;source=embed&amp;ll=38,-97&amp;spn=2.441283,6.468201&amp;z=9" style="color:#0000FF;text-align:left">View Larger Map</a></small>
+
+Looking into this, the raw data does not include any state, zip code, dma code, etc. It simply says that this is part of the US. This is at odds with the precision indicated within the GPS coordinates, as mentioned above.
+
+```sql
+mysql -e "select * from my_data.geoip_locations where location_id=223"
++-------------+---------+--------+------+-------------+----------+-----------+----------+-----------+
+| location_id | country | region | city | postal_code | latitude | longitude | dma_code | area_code |
++-------------+---------+--------+------+-------------+----------+-----------+----------+-----------+
+|         223 | US      |        |      |             |       38 |       -97 |          |           |
++-------------+---------+--------+------+-------------+----------+-----------+----------+-----------+
+```
+
+It appears that this location_id is only precise to the level of "this location is somewhere in the US". If you happen to rely upon the gps coordinates to provide the precision for you
+
+So - we've got a problem - a decent chunk of our GeoIP coordinates return very high precision coordinates for some very low accuracy data. How big of a problem is this though? Is 6.6% of our data points really that much? 
+
+Here's a couple of very quick and dirty heatmaps of GeoIP locations that hopefully illustrate the issue.
+ The before image contains (38,-97), the after image removes these points from the dataset.
+<iframe style="width:100%;height: 500px" src='/presentations/kansas/slider.html' frameborder="0"> </iframe>
+
+###### Heatmap links
+[With (38, -97)](/presentations/kansas/google1.html)
+
+[Without](/presentations/kansas/google2.html)
+
+If you look closely at the center of kansas, you'll see either a huge heat cluster northeast of Wichita, or none, depending on where the slider is. 
+In the first image, this cluster is the largest in the country. Which is crazy.
+
+So - how do I go about fixing this? There are a couple of options I can think of
+
+1. Remove the low-precision data points. Fixes the problem in the short term, but requires query writers/developers to be very active about knowledge dissemmination. Probably the most common scenario I've encountered.
+2. Provide an additional data point to indicate what precision level the data really provides. Something akin to Google's zoom level for maps. Something akin to "this point is precise to plus or minus XX mi/km". This would enable query writers to determine what level of accuracy they require for their particular use.
+  <ul>
+    <li>Note that the raw MaxMind data sort of provides this information. Combinations of blank fields appear to indicate the accuracy level of a particular location</li>
+    <li>Normally I would suggest that MaxMind only provide the tens digit in their data set, which would indicate that it is accurate to within ~1000km (still a bit too precise for the US, but much better than the current tenths digit). However, I am unsure how to properly represent this within the csvs provided</li>
+  </ul>
+
+What lessons can we learn here? 
+
+1. Query writers - look at your data and ask questions! I came across this issue when I noticed that a lot of the raw data points in a table at work had these particular coordinates
+
+2. it is important to understand if your data has differring levels of precision, and how that is represented. GPS coordinates are supposed to confer a level of precision, but in MaxMind's case, it appears to not be the case.
+  <ul> 
+    <li>For the MaxMind dataset, blank fields appear to indicate different levels of precision in the GeoLiteCity-Location.csv file</li>
+    <li>The (38,-97) entry, for example, contains only `{ "country": "US", "latitude": 38, "longitude": -97 }`</li>
+    <li>Virginia (where I grew up) contains 
+      ```
+        {"id":12884,"country":"US","region":"VA","city":"","postal_code":"",
+         "latitude":37.768,"longitude":-78.2057,"dma_code":"","area_code":""}
+      ```
+      note the presense of the third and fourth decimal place, which should indicate a precision level of +/-110m & +/- 11m (respectively).
+    </li>
+    <li>Whereas Reston (the town where I grew up) contains the following
+      ```
+       {"id":651,"country":"US","region":"VA","city":"Reston",
+        "postal_code":"20190","latitude":38.9599,
+        "longitude":-77.3428,"dma_code":"511","area_code":"703"}
+      ```
+    </li>
+    <li>If I were attempting to aggregate purchases to the state level of accuracy, I could include the second and third example here; However, if I wanted to aggregate purchases down to the city level, I really should only use the third example</li>
+  </ul>
+
+3. Developers - if you notice a problem like this, perhaps attempt to "override" the level of precision. A column called "accurate_to", measured in (meters/km/miles), provided along with the gps coordinates would go a long way towards preventing bad analysis.
+
+4. Organizations - provide a good communication path between your query writers and developers when there are questions about how data is formed. Having people who can bridge the gap between developer and query writer (someone who knows how to code and also how work with data) goes a long way to help remedy these sorts of problems.
+
+
+--------
+
+This post mentions GeoLite data created by MaxMind, available from [MaxMind](http://www.maxmind.com)
