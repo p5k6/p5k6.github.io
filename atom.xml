@@ -4,7 +4,7 @@
   <title><![CDATA[YATB (Yet another tech blog)]]></title>
   <link href="http://p5k6.github.io/atom.xml" rel="self"/>
   <link href="http://p5k6.github.io/"/>
-  <updated>2014-08-11T09:29:34-06:00</updated>
+  <updated>2014-08-11T09:31:22-06:00</updated>
   <id>http://p5k6.github.io/</id>
   <author>
     <name><![CDATA[Josh Stanfield]]></name>
@@ -31,7 +31,7 @@ This issue is not directly documented in the source of the data used, and is lit
 <h3>Data Sources</h3>
 
 <p>The source data I have used in the past is a free database from MaxMind <a href="http://dev.maxmind.com/geoip/legacy/geolite/">GeoLite database</a>.
-This database allows you to lookups an input of an IP address, and return a set of GPS coordinates; at a high level, MaxMind provides you with data to perform <code>[lat, long] = f(IP_ADDR)</code>.
+This database allows you to lookup an input of an IP address, and return a set of GPS coordinates; at a high level, MaxMind provides you with data to perform <code>[lat, long] = f(IP_ADDR)</code>.
 The accuracy of the geolite database is mentioned online <a href="http://www.maxmind.com/en/geolite_city_accuracy">on MaxMind&rsquo;s website</a>
 The database is reasonably accurate (approximately 78% match in the US is accurate to within 40 km).</p>
 
