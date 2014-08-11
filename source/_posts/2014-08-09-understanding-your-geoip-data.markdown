@@ -20,7 +20,7 @@ This issue is not directly documented in the source of the data used, and is lit
 ### Data Sources
 
 The source data I have used in the past is a free database from MaxMind [GeoLite database](http://dev.maxmind.com/geoip/legacy/geolite/). 
-This database provides lookups using an input of an IP address, and returns a set of GPS coordinates; at a high level, MaxMind provides you with data to perform `[lat, long] = f(IP_ADDR)`.
+This database allows you to lookup an input of an IP address, and return a set of GPS coordinates; at a high level, MaxMind provides you with data to perform `[lat, long] = f(IP_ADDR)`.
 The accuracy of the geolite database is mentioned online [on MaxMind's website](http://www.maxmind.com/en/geolite_city_accuracy)
 The database is reasonably accurate (approximately 78% match in the US is accurate to within 40 km).
 
