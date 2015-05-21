@@ -4,7 +4,7 @@ title: "Automating HiveServer/Hive Metastore restarts after lockup"
 date: 2015-05-15 11:08:36 -0600
 comments: false
 author: <a href="http://twitter.com/p5k6">Josh Stanfield</a>
-categories: hive cloudera cdh
+categories: [hive, cloudera, cdh]
 ---
 
 ### Intro
