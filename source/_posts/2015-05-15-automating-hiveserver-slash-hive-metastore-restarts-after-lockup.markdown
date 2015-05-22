@@ -40,20 +40,18 @@ At first - I tried attaching jdb to the running job. However, I quickly found ou
 
 So - I decided to try to start up the Hive Metastore using the jdb directly (click below to show how I figured out exactly what command to run)
 
-test
-
-<button id="toggle">←</button>
+<button id="toggle">Expand→</button>
 
 <div id="find-command" style="display: none;"> 
- 
- teswttest test
 
 {% markdown %}
 
 So - I ran my which commands on my hive-metastore server. 
 First - I looked at `/etc/init.d/hive-metastore`, and found the startup command for hive-metastore (which is effectively `su -s /bin/bash hive -c "hive --service metastore"`).
+
 From here - I looked at the hive command in vim (`vim $(which hive)`), which lead me to `/usr/lib/hive/bin/ext/metastore.sh`.
 This file, it turns out, calls `hadoop jar org.apache.hadoop.hive.metastore.HiveMetaStore`, so I took a look at the `hadoop` command.
+
 `vim $(which hadoop)` lead me to /usr/lib/hadoop/bin/hadoop. In here - I finally see the acutal java call. However, it used a mix of env variables
 
 So - I decided to just print the call to stderr (in addition to calling the program as normal) rather than trace all the variables by hand.
@@ -71,6 +69,8 @@ This enabled me to start up hive-metastore in jdb! my final call to start it up 
 ```bash
 jdb -classpath $CLASSPATH -Xmx1000m -Djava.net.preferIPv4Stack=true -server -Dhadoop.log.dir=/u/hadoop/var/log/hadoop -Dhadoop.log.file=hadoop.log -Dhadoop.home.dir=/usr/lib/hadoop -Dhadoop.id.str=hdfs -Dhadoop.root.logger=INFO,console -Djava.library.path=/usr/lib/hadoop/lib/native -Dhadoop.policy.file=hadoop-policy.xml -Djava.net.preferIPv4Stack=true  -Dhadoop.security.logger=INFO,NullAppender org.apache.hadoop.util.RunJar "/usr/lib/hive/lib/hive-service-0.13.1-cdh5.3.0.jar"  "org.apache.hadoop.hive.metastore.HiveMetaStore"
 ```
+
+(note that $CLASSPATH was set to the same value from above where I echoed $CLASSPATH)
 
 {% endmarkdown %}
 
@@ -147,8 +147,12 @@ So - now we've got some relatively simple logic to determine whether the metasto
 Now - I've got my logic, so I wrote a simple ruby script which daemonizes the above logic, and is controlled via a sysV init script (our servers are running CentOS).
 My script runs the above logic every 30 seconds, and - on timeout - attempts restart - first by shutting down via service, then via kill -15 <pid>, and finally via kill -9 (if needed). 
 
-One issue I found right after deploy was that the monitor was continuously restarting the metastore (oops...).
-Turns out that I needed to close the write after writing "hello" to the socket.
+One issue I found right after the initial deploy was that the monitor was continuously restarting the metastore (oops...).
+Turns out that I needed to close_write the socket after writing "hello".
 After adding that to the above script, the monitor ran successfully (and has been for the last 2+ days so far).
+
+After these changes, my code is pretty much this
+
+{% include_code [hive_metastore_restart.rb] [ lang:ruby ] metastore_restart.rb %}
 
 Hopefully this will help us avoid additional downtime with hive-metastore.
