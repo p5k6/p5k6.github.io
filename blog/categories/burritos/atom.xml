@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Burritos | Unintended Consequences]]></title>
+  <link href="http://p5k6.github.io/blog/categories/burritos/atom.xml" rel="self"/>
+  <link href="http://p5k6.github.io/"/>
+  <updated>2015-05-22T16:44:58-06:00</updated>
+  <id>http://p5k6.github.io/</id>
+  <author>
+    <name><![CDATA[Josh Stanfield]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Random Burrito Filling Recipe]]></title>
+    <link href="http://p5k6.github.io/blog/2015/05/22/random-burrito-filling-recipe/"/>
+    <updated>2015-05-22T15:38:23-06:00</updated>
+    <id>http://p5k6.github.io/blog/2015/05/22/random-burrito-filling-recipe</id>
+    <content type="html"><![CDATA[<h3>I love burritos</h3>
+
+<p>And I always have. They&rsquo;re quick and delicious, though maybe not the healthiest thing in the world.
+Years ago I came across a recipe which has become a staple of my diet for about a decade now.
+Combine this with a rice cooker and you have a very hands-off way to cook up a big meal.</p>
+
+<p>This recipe makes about 2.5 pounds of shredded chicken, which is great for adding to burritos, tacos and other items.
+I believe I got this recipe from the old Ars Technica Bachelor Chow pdf that was sent around their forums a long time ago, though I could be mistaken there (I&rsquo;ve since lost the pdf).</p>
+
+<h3>Chicken filling Recipe</h3>
+
+<h6>Ingredients</h6>
+
+<ul>
+<li>1 2 &frac12; pound bag of frozen chicken breasts (you can get these at most grocery stores).
+
+<ul>
+<li>defrost the chicken breasts overnight for best results</li>
+</ul>
+</li>
+<li>1 24 oz jar of salsa (I prefer a medium strength one)</li>
+<li>1 packet of taco seasoning</li>
+</ul>
+
+
+<h6>Equipment</h6>
+
+<ul>
+<li>1 slow cooker (I&rsquo;ve used 4 and 6.5 quart ones; think the 4 qt one works better, though 6.5 works quite well)</li>
+</ul>
+
+
+<h6>Directions</h6>
+
+<ul>
+<li>put the defrosted chicken, taco seasoning and salsa in the slow cooker</li>
+<li>cook for 8-10 hours on low</li>
+<li>shred the chicken</li>
+<li>integrate some of the leftover salsa into the shredded chicken for best taste</li>
+</ul>
+
+
+<h3>Notes</h3>
+
+<ul>
+<li>I&rsquo;ve used 16 oz jars of salsa in the past (more common than 24 oz jars). Personally I find 16 oz is not enough to cover the chicken, or add enough flavor. They work better in 4 qt slow cookers if you want to use this size though</li>
+<li>According to <a href="http://www.stilltasty.com/fooditems/index/16787">this site</a> cooked chicken will last 3-4 days before going bad, so use it up before then</li>
+<li>I usually put a small amount (couple of forkfulls) in a container when reheating, and reheat for 1m30s</li>
+<li>I live at high altitude (5430 feet); <a href="http://www.ext.colostate.edu/pubs/foodnut/p41.html#slow">supposedly I should be adjusting my slow cooking for this</a></li>
+<li>If you don&rsquo;t defrost the chicken ahead of time, a lot of the chicken juice will end up in the slow cooker, watering down the salsa</li>
+</ul>
+
+]]></content>
+  </entry>
+  
+</feed>
