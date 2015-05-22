@@ -5,7 +5,7 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>Unintended Consequences</title>
+  <title>Automating HiveServer/Hive Metastore Restarts After Lockup - Unintended Consequences</title>
   <meta name="author" content="Josh Stanfield">
 
   
@@ -18,7 +18,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://p5k6.github.io">
+  <link rel="canonical" href="http://p5k6.github.io/blog/2015/05/15/automating-hiveserver-slash-hive-metastore-restarts-after-lockup">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="Unintended Consequences" type="application/atom+xml">
@@ -61,15 +61,12 @@
 </nav>
   <div id="main">
     <div id="content">
-      <div class="blog-index">
+      <div>
+<article class="hentry" role="article">
   
-  
-  
-    <article>
-      
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2015/05/15/automating-hiveserver-slash-hive-metastore-restarts-after-lockup/">Automating HiveServer/Hive Metastore Restarts After Lockup</a></h1>
+      <h1 class="entry-title">Automating HiveServer/Hive Metastore Restarts After Lockup</h1>
     
     
       <p class="meta">
@@ -92,7 +89,7 @@
   </header>
 
 
-  <div class="entry-content"><script type="text/javascript" src="/javascripts/find-command-toggle.js"></script>
+<div class="entry-content"><script type="text/javascript" src="/javascripts/find-command-toggle.js"></script>
 
 
 <h3>Intro</h3>
@@ -346,22 +343,16 @@ After adding that to the above script, the monitor ran successfully (and has bee
 
 <p>Hopefully this will help us avoid additional downtime with hive-metastore.</p>
 </div>
-  
-  
 
 
-    </article>
-  
-  
-    <article>
+  <footer>
+    <p class="meta">
       
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014/08/09/understanding-your-geoip-data/">Understanding Your Geoip Data</a></h1>
-    
-    
-      <p class="meta">
-        
+  
+
+<span class="byline author vcard">Posted by <span class="fn"><a href="http://twitter.com/p5k6">Josh Stanfield</a></span></span>
+
+      
 
 
 
@@ -373,143 +364,38 @@ After adding that to the above script, the monitor ran successfully (and has bee
   
 
 
-<time datetime="2014-08-09T13:31:18-06:00" pubdate data-updated="true"></time>
-        
-      </p>
+<time datetime="2015-05-15T11:08:36-06:00" pubdate data-updated="true"></time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/cdh/'>cdh</a>, <a class='category' href='/blog/categories/cloudera/'>cloudera</a>, <a class='category' href='/blog/categories/hive/'>hive</a>
+  
+</span>
+
+
+    </p>
     
-  </header>
-
-
-  <div class="entry-content"><h3>Intro</h3>
-
-<p>One problem I have encountered in my time working with &ldquo;big data&rdquo; has been data quality issues.
-There have been many times where I would need to provide some form of data cleansing to some data used in a query, or help out data scientists to clean up some data used in one of their models.
-This post addresses one form of data cleansing I have to perform with some regularity; I call it &ldquo;The Kansas problem&rdquo;.</p>
-
-<p>The problem is that the geolocation data returned from a GeoIP lookup returns the GPS coordinates of (38.0, -97.0) as the location for &ldquo;US&rdquo;; this gives a false impression of the precision of the data point returned, relative to the intended accuracy (somewhere within the US).
-The accuracy can be somewhat imputed from the additional metadata contained within the geoip_locations table from MaxMind, but it is not explicitly stated.
-This issue is not directly documented in the source of the data used, and is little discussed online as near as I can tell, so I thought it would be useful to do a quick blog post.</p>
-
-<h3>Data Sources</h3>
-
-<p>The source data I have used in the past is a free database from MaxMind <a href="http://dev.maxmind.com/geoip/legacy/geolite/">GeoLite database</a>.
-This database allows you to lookup an input of an IP address, and return a set of GPS coordinates; at a high level, MaxMind provides you with data to perform <code>[lat, long] = f(IP_ADDR)</code>.
-The accuracy of the geolite database is mentioned online <a href="http://www.maxmind.com/en/geolite_city_accuracy">on MaxMind&rsquo;s website</a>
-The database is reasonably accurate (approximately 78% match in the US is accurate to within 40 km).</p>
-
-<p>For the input IP addresses, I grabbed 50000 IP addresses from the list of Wikipedia revisions from April 2011.
-These are all anonymous edits (as anonymous edits leave IP address rather than a username in the edit history).
-I then translated the IPs to 32-bit integers, and looked up the location_id from MaxMind.
-Using the location_id, I am then able to pull the GPS coordinates, and did so for US locations (for demonstration purposes).
-This dataset contained 28016 entries, of which 1848 entries resolved to (38.0, -97.0), or approximately 6.6% of the entries.</p>
-
-<h3>What the data tells us</h3>
-
-<p>If you happen to look up (38.0, -97.0) on google maps, you won&rsquo;t really find much there (see below).
-Essentially you&rsquo;re 42 miles from wichita (or 27 miles as the crow flies).
-The decimal points within the gps coordinates would imply that the data is accurate to within approximately 11.1 km (or approximately 6.89 miles). (link to <a href="http://gis.stackexchange.com/questions/8650/how-to-measure-the-accuracy-of-latitude-and-longitude">Stack Overflow link on GPS precision</a>).</p>
-
-<p>This level of precision <em>could</em> include the town of <a href="http://en.wikipedia.org/wiki/Potwin,_Kansas">Potwin, KS</a> (Population 449), but is out of range of <a href="http://en.wikipedia.org/wiki/Whitewater,_KS">Whitewater, KS</a> (Population 718), the only other town within the ~7 Mile radius of (38.0, -97.0).
-This seems like a somewhat unusual place for 6.6% of wikipedia edits to occur.</p>
-
-<iframe width="425" height="350" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src="https://maps.google.com/maps?t=m&amp;hl=en-US&amp;gl=US&amp;mapclient=embed&amp;q=38%C2%B000'00.0%22N+97%C2%B000'00.0%22W&amp;ie=UTF8&amp;source=embed&amp;ll=38,-97&amp;spn=2.441283,6.468201&amp;z=9&amp;output=embed"></iframe>
-
-
-<p><br /><small><a href="https://maps.google.com/maps?t=m&amp;hl=en-US&amp;gl=US&amp;mapclient=embed&amp;q=38%C2%B000'00.0%22N+97%C2%B000'00.0%22W&amp;ie=UTF8&amp;source=embed&amp;ll=38,-97&amp;spn=2.441283,6.468201&amp;z=9" style="color:#0000FF;text-align:left">View Larger Map</a></small></p>
-
-<p>Looking into this, the raw data does not include any state, zip code, dma code, etc. It simply says that this is part of the US. This is at odds with the precision indicated within the GPS coordinates, as mentioned above.</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="n">mysql</span> <span class="o">-</span><span class="n">e</span> <span class="ss">&quot;select * from my_data.geoip_locations where location_id=223&quot;</span>
-</span><span class='line'><span class="o">+</span><span class="c1">-------------+---------+--------+------+-------------+----------+-----------+----------+-----------+</span>
-</span><span class='line'><span class="o">|</span> <span class="n">location_id</span> <span class="o">|</span> <span class="n">country</span> <span class="o">|</span> <span class="n">region</span> <span class="o">|</span> <span class="n">city</span> <span class="o">|</span> <span class="n">postal_code</span> <span class="o">|</span> <span class="n">latitude</span> <span class="o">|</span> <span class="n">longitude</span> <span class="o">|</span> <span class="n">dma_code</span> <span class="o">|</span> <span class="n">area_code</span> <span class="o">|</span>
-</span><span class='line'><span class="o">+</span><span class="c1">-------------+---------+--------+------+-------------+----------+-----------+----------+-----------+</span>
-</span><span class='line'><span class="o">|</span>         <span class="mi">223</span> <span class="o">|</span> <span class="n">US</span>      <span class="o">|</span>        <span class="o">|</span>      <span class="o">|</span>             <span class="o">|</span>       <span class="mi">38</span> <span class="o">|</span>       <span class="o">-</span><span class="mi">97</span> <span class="o">|</span>          <span class="o">|</span>           <span class="o">|</span>
-</span><span class='line'><span class="o">+</span><span class="c1">-------------+---------+--------+------+-------------+----------+-----------+----------+-----------+</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>It appears that this location_id is only precise to the level of &ldquo;this location is somewhere in the US&rdquo;. If you happen to rely upon the gps coordinates to provide the precision for you</p>
-
-<p>So - we&rsquo;ve got a problem - a decent chunk of our GeoIP coordinates return very high precision coordinates for some very low accuracy data. How big of a problem is this though? Is 6.6% of our data points really that much?</p>
-
-<p>Here&rsquo;s a couple of very quick and dirty heatmaps of GeoIP locations that hopefully illustrate the issue.
- The before image contains (38,-97), the after image removes these points from the dataset.</p>
-
-<iframe style="width:100%;height: 500px" src='/presentations/kansas/slider.html' frameborder="0"> </iframe>
-
-
-<h6>Heatmap links</h6>
-
-<p><a href="/presentations/kansas/google1.html">With (38, -97)</a></p>
-
-<p><a href="/presentations/kansas/google2.html">Without</a></p>
-
-<p>If you look closely at the center of kansas, you&rsquo;ll see either a huge heat cluster northeast of Wichita, or none, depending on where the slider is.
-In the first image, this cluster is the largest in the country. Which is crazy.</p>
-
-<p>So - how do I go about fixing this? There are a couple of options I can think of</p>
-
-<ol>
-<li>Remove the low-precision data points. Fixes the problem in the short term, but requires query writers/developers to be very active about knowledge dissemmination. Probably the most common scenario I&rsquo;ve encountered.</li>
-<li>Provide an additional data point to indicate what precision level the data really provides. Something akin to Google&rsquo;s zoom level for maps. Something akin to &ldquo;this point is precise to plus or minus XX mi/km&rdquo;. This would enable query writers to determine what level of accuracy they require for their particular use.
-<ul>
- <li>Note that the raw MaxMind data sort of provides this information. Combinations of blank fields appear to indicate the accuracy level of a particular location</li>
- <li>Normally I would suggest that MaxMind only provide the tens digit in their data set, which would indicate that it is accurate to within ~1000km (still a bit too precise for the US, but much better than the current tenths digit). However, I am unsure how to properly represent this within the csvs provided</li>
-</ul></li>
-</ol>
-
-
-<p>What lessons can we learn here?</p>
-
-<ol>
-<li><p>Query writers - look at your data and ask questions! I came across this issue when I noticed that a lot of the raw data points in a table at work had these particular coordinates</p></li>
-<li><p>it is important to understand if your data has differring levels of precision, and how that is represented. GPS coordinates are supposed to confer a level of precision, but in MaxMind&rsquo;s case, it appears to not be the case.
-<ul>
- <li>For the MaxMind dataset, blank fields appear to indicate different levels of precision in the GeoLiteCity-Location.csv file</li>
- <li>The (38,-97) entry, for example, contains only <code>{ "country": "US", "latitude": 38, "longitude": -97 }</code></li>
- <li>Virginia (where I grew up) contains
-   <code>
-     {"id":12884,"country":"US","region":"VA","city":"","postal_code":"",
-      "latitude":37.768,"longitude":-78.2057,"dma_code":"","area_code":""}
-  </code>
-   note the presense of the third and fourth decimal place, which should indicate a precision level of +/-110m &amp; +/- 11m (respectively).
- </li>
- <li>Whereas Reston (the town where I grew up) contains the following
-   <code>
-    {"id":651,"country":"US","region":"VA","city":"Reston",
-     "postal_code":"20190","latitude":38.9599,
-     "longitude":-77.3428,"dma_code":"511","area_code":"703"}
-  </code>
- </li>
- <li>If I were attempting to aggregate purchases to the state level of accuracy, I could include the second and third example here; However, if I wanted to aggregate purchases down to the city level, I really should only use the third example</li>
-</ul></p></li>
-<li><p>Developers - if you notice a problem like this, perhaps attempt to &ldquo;override&rdquo; the level of precision. A column called &ldquo;accurate_to&rdquo;, measured in (meters/km/miles), provided along with the gps coordinates would go a long way towards preventing bad analysis.</p></li>
-<li><p>Organizations - provide a good communication path between your query writers and developers when there are questions about how data is formed. Having people who can bridge the gap between developer and query writer (someone who knows how to code and also how work with data) goes a long way to help remedy these sorts of problems.</p></li>
-</ol>
-
-
-<hr />
-
-<p>This post mentions GeoLite data created by MaxMind, available from <a href="http://www.maxmind.com">MaxMind</a></p>
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://p5k6.github.io/blog/2015/05/15/automating-hiveserver-slash-hive-metastore-restarts-after-lockup/" data-via="p5k6" data-counturl="http://p5k6.github.io/blog/2015/05/15/automating-hiveserver-slash-hive-metastore-restarts-after-lockup/" >Tweet</a>
+  
+  
+  
 </div>
-  
-  
 
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2014/08/09/understanding-your-geoip-data/" title="Previous Post: Understanding Your Geoip Data">&laquo; Understanding Your Geoip Data</a>
+      
+      
+    </p>
+  </footer>
+</article>
 
-    </article>
-  
-  <div class="pagination">
-    
-    <a href="/blog/archives">Blog Archives</a>
-    
-  </div>
 </div>
+
 <aside class="sidebar">
   
     <section>
@@ -562,6 +448,7 @@ In the first image, this cluster is the largest in the country. Which is crazy.<
 
   
 </aside>
+
 
     </div>
   </div>

@@ -4,7 +4,7 @@
   <title><![CDATA[Unintended Consequences]]></title>
   <link href="http://p5k6.github.io/atom.xml" rel="self"/>
   <link href="http://p5k6.github.io/"/>
-  <updated>2014-08-11T09:53:02-06:00</updated>
+  <updated>2015-05-22T14:54:04-06:00</updated>
   <id>http://p5k6.github.io/</id>
   <author>
     <name><![CDATA[Josh Stanfield]]></name>
@@ -12,6 +12,267 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Automating HiveServer/Hive Metastore Restarts After Lockup]]></title>
+    <link href="http://p5k6.github.io/blog/2015/05/15/automating-hiveserver-slash-hive-metastore-restarts-after-lockup/"/>
+    <updated>2015-05-15T11:08:36-06:00</updated>
+    <id>http://p5k6.github.io/blog/2015/05/15/automating-hiveserver-slash-hive-metastore-restarts-after-lockup</id>
+    <content type="html"><![CDATA[<script type="text/javascript" src="http://p5k6.github.io/javascripts/find-command-toggle.js"></script>
+
+
+<h3>Intro</h3>
+
+<p>At LivingSocial, one of the key components we use in the Hadoop ecosystem is Hive. I&rsquo;ve been working here and seen us migrate from 0.7 up to (currently) 0.13.
+One of the problems I&rsquo;ve encountered over the years has been HiveServer (1 or 2) or the Hive Metastore &ldquo;locking up&rdquo; - i.e. calls to the service just hang.
+Usually when this happens, someone from our warehouse team will go into the server and manually restart the init.d service (as we are not using Ambari or Cloudera Manager).
+However, depending on response times - this can cause issues when we have long running ETL jobs overnight.</p>
+
+<p>This post addresses a new method I&rsquo;ve recently discovered for emulating hive service lockups. These will probably be old hat for many java devs, but were new to me.</p>
+
+<h3>Background</h3>
+
+<p>Over the years we&rsquo;ve tried various monitor scripts to attempt to check to see if Hive is no longer responding. Some of the methods we&rsquo;ve used include:</p>
+
+<ul>
+<li>Check for excessive CPU usage (usually Hive pegging one or more cores at 100%),</li>
+<li>Real time scan of the log looking for errors and restart if a particular error was encountered > 20 times in a 2 min period,</li>
+<li>A &ldquo;simple query&rdquo; executed every 30 min (<code>select * from table limit 5</code>)</li>
+<li>An every {{ unit of time }} restart of the underlying service (usually once a day, but sometimes more frequent)</li>
+</ul>
+
+
+<p>These all work to varying degrees, but we still encounter the occasional lockup that slips through the various checks.
+It would be great to be able to detect these lockups as soon as they occur, and immediately restart.</p>
+
+<h3>What I found</h3>
+
+<p>Basically, I wanted to find a way to lock up hive in a controlled enviornment.
+Looking up &ldquo;how to lock up a jvm&rdquo; on google was&hellip;interesting, and not very fruitful.
+Eventually, a coworker mentioned - &ldquo;why not just use Thread.sleep()?&rdquo;. Which made a lot of sense to me.</p>
+
+<p>But - i needed a way of injecting Thread.sleep() into the running hive-metastore process. So - I looked into JDB.
+At first - I tried attaching jdb to the running job. However, I quickly found out that doing so results in a read-only jdb connection.</p>
+
+<p>So - I decided to try to start up the Hive Metastore using the jdb directly (click below to show how I figured out exactly what command to run)</p>
+
+<p><button id="toggle">Expand→</button></p>
+
+<div id="find-command" style="display: none;"> 
+
+<p>So - I ran my which commands on my hive-metastore server.
+First - I looked at <code>/etc/init.d/hive-metastore</code>, and found the startup command for hive-metastore (which is effectively <code>su -s /bin/bash hive -c "hive --service metastore"</code>).</p>
+
+<p>From here - I looked at the hive command in vim (<code>vim $(which hive)</code>), which lead me to <code>/usr/lib/hive/bin/ext/metastore.sh</code>.
+This file, it turns out, calls <code>hadoop jar org.apache.hadoop.hive.metastore.HiveMetaStore</code>, so I took a look at the <code>hadoop</code> command.</p>
+
+<p><code>vim $(which hadoop)</code> lead me to /usr/lib/hadoop/bin/hadoop. In here - I finally see the acutal java call. However, it used a mix of env variables</p>
+
+<p>So - I decided to just print the call to stderr (in addition to calling the program as normal) rather than trace all the variables by hand.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nb">export </span><span class="nv">CLASSPATH</span><span class="o">=</span><span class="nv">$CLASSPATH</span>
+</span><span class='line'>&gt;<span class="p">&amp;</span><span class="m">2</span> <span class="nb">echo</span> <span class="s2">&quot;$CLASSPATH&quot;</span>
+</span><span class='line'>&gt;<span class="p">&amp;</span><span class="m">2</span> <span class="nb">echo</span> <span class="s2">&quot;\&quot;$JAVA\&quot; $JAVA_HEAP_MAX $HADOOP_OPTS $CLASS \&quot;$@\&quot;&quot;</span>
+</span><span class='line'><span class="nb">exec</span> <span class="s2">&quot;$JAVA&quot;</span> <span class="nv">$JAVA_HEAP_MAX</span> <span class="nv">$HADOOP_OPTS</span> <span class="nv">$CLASS</span> <span class="s2">&quot;$@&quot;</span>
+</span><span class='line'><span class="p">;;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This enabled me to start up hive-metastore in jdb! my final call to start it up was</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>jdb -classpath <span class="nv">$CLASSPATH</span> -Xmx1000m -Djava.net.preferIPv4Stack<span class="o">=</span><span class="nb">true</span> -server -Dhadoop.log.dir<span class="o">=</span>/u/hadoop/var/log/hadoop -Dhadoop.log.file<span class="o">=</span>hadoop.log -Dhadoop.home.dir<span class="o">=</span>/usr/lib/hadoop -Dhadoop.id.str<span class="o">=</span>hdfs -Dhadoop.root.logger<span class="o">=</span>INFO,console -Djava.library.path<span class="o">=</span>/usr/lib/hadoop/lib/native -Dhadoop.policy.file<span class="o">=</span>hadoop-policy.xml -Djava.net.preferIPv4Stack<span class="o">=</span><span class="nb">true</span>  -Dhadoop.security.logger<span class="o">=</span>INFO,NullAppender org.apache.hadoop.util.RunJar <span class="s2">&quot;/usr/lib/hive/lib/hive-service-0.13.1-cdh5.3.0.jar&quot;</span>  <span class="s2">&quot;org.apache.hadoop.hive.metastore.HiveMetaStore&quot;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>(note that $CLASSPATH was set to the same value from above where I echoed $CLASSPATH)</p>
+
+
+</div>
+
+
+<p>I ran the following in jdb to &ldquo;lock up&rdquo; the metastore</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>Initializing jdb ...
+</span><span class='line'>&gt; run
+</span><span class='line'>run org.apache.hadoop.util.RunJar /usr/lib/hive/lib/hive-service-0.13.1-cdh5.3.0.jar org.apache.hadoop.hive.metastore.HiveMetaStore
+</span><span class='line'>Set uncaught java.lang.Throwable
+</span><span class='line'>Set deferred uncaught java.lang.Throwable
+</span><span class='line'>&gt;
+</span><span class='line'>VM Started:
+</span><span class='line'>&gt; threads
+</span><span class='line'>Group system:
+</span><span class='line'><span class="o">(</span>java.lang.ref.Reference<span class="nv">$ReferenceHandler</span><span class="o">)</span>0x160         Reference Handler                         cond. waiting
+</span><span class='line'><span class="o">(</span>java.lang.ref.Finalizer<span class="nv">$FinalizerThread</span><span class="o">)</span>0x15f          Finalizer                                 cond. waiting
+</span><span class='line'><span class="o">(</span>java.lang.Thread<span class="o">)</span>0x15e                                 Signal Dispatcher                         running
+</span><span class='line'><span class="o">(</span>java.lang.Thread<span class="o">)</span>0x45e                                 process reaper                            cond. waiting
+</span><span class='line'>Group main:
+</span><span class='line'><span class="o">(</span>java.lang.Thread<span class="o">)</span>0x1                                   main                                      running
+</span><span class='line'><span class="o">(</span>org.apache.hadoop.hive.metastore.HiveMetaStore<span class="nv">$3</span><span class="o">)</span>0x552 Thread-4                                  cond. waiting
+</span><span class='line'><span class="o">(</span>com.google.common.base.internal.Finalizer<span class="o">)</span>0x72c        com.google.common.base.internal.Finalizer cond. waiting
+</span><span class='line'><span class="o">(</span>java.lang.Thread<span class="o">)</span>0x744                                 BoneCP-keep-alive-scheduler               cond. waiting
+</span><span class='line'><span class="o">(</span>java.lang.Thread<span class="o">)</span>0x746                                 BoneCP-pool-watch-thread                  cond. waiting
+</span><span class='line'><span class="o">(</span>com.google.common.base.internal.Finalizer<span class="o">)</span>0x84f        com.google.common.base.internal.Finalizer cond. waiting
+</span><span class='line'><span class="o">(</span>java.lang.Thread<span class="o">)</span>0x850                                 BoneCP-keep-alive-scheduler               cond. waiting
+</span><span class='line'><span class="o">(</span>java.lang.Thread<span class="o">)</span>0x851                                 BoneCP-pool-watch-thread                  cond. waiting
+</span><span class='line'>&gt; <span class="nb">suspend </span>0x1
+</span><span class='line'>&gt;
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>By suspending the thread, I could now see how other apps would respond. I proceeded to issue a &ldquo;desc table&rdquo; command via beeline. It hung!
+So - now I&rsquo;ve got something which appears to emulate a &ldquo;metastore lockup&rdquo;.</p>
+
+<p>So - what can I do with this info?</p>
+
+<h3>How can I tell if the metastore locked up?</h3>
+
+<p>I&rsquo;ve played around with <a href="https://github.com/forward3d/rbhive">rbhive</a> and knew that &ldquo;thrift_socket&rdquo; was the lowest point in its stack for HS2, so why not start there?
+Instead of looking at thrift_socket though, I figured - let&rsquo;s just try a simple network socket.
+My first thought was - let&rsquo;s just say &ldquo;hi&rdquo; over a socket connection to the running metastore instance (i.e. before suspending)</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="o">[</span><span class="mi">44</span><span class="o">]</span> <span class="n">pry</span><span class="p">(</span><span class="n">main</span><span class="p">)</span><span class="o">&gt;</span> <span class="n">socket</span> <span class="o">=</span> <span class="no">Socket</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="ss">:INET</span><span class="p">,</span> <span class="ss">:STREAM</span><span class="p">)</span>
+</span><span class='line'><span class="o">=&gt;</span> <span class="c1">#&lt;Socket:fd 15&gt;</span>
+</span><span class='line'><span class="o">[</span><span class="mi">45</span><span class="o">]</span> <span class="n">pry</span><span class="p">(</span><span class="n">main</span><span class="p">)</span><span class="o">&gt;</span> <span class="n">socket</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">sockaddr</span><span class="p">)</span>
+</span><span class='line'><span class="o">=&gt;</span> <span class="mi">0</span>
+</span><span class='line'><span class="o">[</span><span class="mi">46</span><span class="o">]</span> <span class="n">pry</span><span class="p">(</span><span class="n">main</span><span class="p">)</span><span class="o">&gt;</span> <span class="n">socket</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;GET / HTTP/1.0</span><span class="se">\r\n\r\n</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span class='line'><span class="o">=&gt;</span> <span class="mi">18</span>
+</span><span class='line'><span class="o">[</span><span class="mi">47</span><span class="o">]</span> <span class="n">pry</span><span class="p">(</span><span class="n">main</span><span class="p">)</span><span class="o">&gt;</span> <span class="n">socket</span><span class="o">.</span><span class="n">read</span>
+</span><span class='line'><span class="o">=&gt;</span> <span class="s2">&quot;&quot;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>hmmm - I&rsquo;ve got an empty string back. Not nil. Interesting. What happens when I try to do this with the thread asleep</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="o">[</span><span class="mi">71</span><span class="o">]</span> <span class="n">pry</span><span class="p">(</span><span class="n">main</span><span class="p">)</span><span class="o">&gt;</span> <span class="no">Timeout</span><span class="o">::</span><span class="n">timeout</span><span class="p">(</span><span class="mi">15</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'><span class="o">[</span><span class="mi">71</span><span class="o">]</span> <span class="n">pry</span><span class="p">(</span><span class="n">main</span><span class="p">)</span><span class="o">*</span>   <span class="n">socket</span> <span class="o">=</span> <span class="no">Socket</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="ss">:INET</span><span class="p">,</span> <span class="ss">:STREAM</span><span class="p">)</span>
+</span><span class='line'><span class="o">[</span><span class="mi">71</span><span class="o">]</span> <span class="n">pry</span><span class="p">(</span><span class="n">main</span><span class="p">)</span><span class="o">*</span>   <span class="n">socket</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">sockaddr</span><span class="p">)</span>
+</span><span class='line'><span class="o">[</span><span class="mi">71</span><span class="o">]</span> <span class="n">pry</span><span class="p">(</span><span class="n">main</span><span class="p">)</span><span class="o">*</span>
+</span><span class='line'><span class="o">[</span><span class="mi">71</span><span class="o">]</span> <span class="n">pry</span><span class="p">(</span><span class="n">main</span><span class="p">)</span><span class="o">*</span>   <span class="n">socket</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;hello&quot;</span><span class="p">)</span>
+</span><span class='line'><span class="o">[</span><span class="mi">71</span><span class="o">]</span> <span class="n">pry</span><span class="p">(</span><span class="n">main</span><span class="p">)</span><span class="o">*</span>   <span class="n">socket</span><span class="o">.</span><span class="n">read</span>
+</span><span class='line'><span class="o">[</span><span class="mi">71</span><span class="o">]</span> <span class="n">pry</span><span class="p">(</span><span class="n">main</span><span class="p">)</span><span class="o">*</span> <span class="p">}</span>
+</span><span class='line'><span class="no">Timeout</span><span class="o">::</span><span class="ss">Error</span><span class="p">:</span> <span class="n">execution</span> <span class="n">expired</span>
+</span><span class='line'><span class="n">from</span> <span class="p">(</span><span class="n">pry</span><span class="p">):</span><span class="mi">84</span><span class="ss">:in</span> <span class="sb">`read&#39;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Great! Now we&rsquo;ve got a socket that times out when I try to read back from the socket! I also tried shutting down the metastore and connecting to the port - ended up with <code>Errno::ECONNREFUSED: Connection refused - connect(2) for 192.168.50.2:9083</code>.
+So - now we&rsquo;ve got some relatively simple logic to determine whether the metastore has locked up!</p>
+
+<h3>The rest of the way</h3>
+
+<p>Now - I&rsquo;ve got my logic, so I wrote a simple ruby script which daemonizes the above logic, and is controlled via a sysV init script (our servers are running CentOS).
+My script runs the above logic every 30 seconds, and - on timeout - attempts restart - first by shutting down via service, then via kill -15 <pid>, and finally via kill -9 (if needed).</p>
+
+<p>One issue I found right after the initial deploy was that the monitor was continuously restarting the metastore (oops&hellip;).
+Turns out that I needed to close_write the socket after writing &ldquo;hello&rdquo;.
+After adding that to the above script, the monitor ran successfully (and has been for the last 2+ days so far).</p>
+
+<p>After these changes, my code is pretty much this</p>
+
+<figure class='code'><figcaption><span>[hive_metastore_restart.rb] [  ] (metastore_restart.rb)</span> <a href='http://p5k6.github.io/code/metastore_restart.rb'>download</a></figcaption>
+<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="no">Timeout</span><span class="o">::</span><span class="n">timeout</span><span class="p">(</span><span class="mi">30</span><span class="p">)</span> <span class="k">do</span>
+</span><span class='line'>  <span class="n">socket</span> <span class="o">=</span> <span class="no">TCPSocket</span><span class="o">.</span><span class="n">new</span> <span class="vi">@hive_metastore_server</span><span class="p">,</span> <span class="vi">@hive_metastore_port</span>
+</span><span class='line'>  <span class="k">begin</span>
+</span><span class='line'>    <span class="n">socket</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;hello&quot;</span><span class="p">)</span>
+</span><span class='line'>    <span class="n">socket</span><span class="o">.</span><span class="n">close_write</span>
+</span><span class='line'>    <span class="n">x</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="n">read</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">#not sure when this would happen....</span>
+</span><span class='line'>    <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">nil?</span>
+</span><span class='line'>      <span class="vi">@monitored_app_state</span> <span class="o">=</span> <span class="ss">:unknown</span>
+</span><span class='line'>      <span class="c1">### raise something eventually</span>
+</span><span class='line'>    <span class="k">else</span>
+</span><span class='line'>      <span class="n">conditional_log</span><span class="p">(</span><span class="ss">:running</span><span class="p">,</span> <span class="s2">&quot;hive metastore appears to be running ok&quot;</span><span class="p">)</span>
+</span><span class='line'>      <span class="vi">@monitored_app_state</span> <span class="o">=</span> <span class="ss">:running</span>
+</span><span class='line'>    <span class="k">end</span>
+</span><span class='line'>  <span class="k">rescue</span> <span class="no">Errno</span><span class="o">::</span><span class="no">ECONNRESET</span><span class="p">,</span><span class="no">Errno</span><span class="o">::</span><span class="no">ECONNREFUSED</span> <span class="o">=&gt;</span> <span class="n">e</span>
+</span><span class='line'>    <span class="n">conditional_log</span><span class="p">(</span><span class="ss">:dead</span><span class="p">,</span> <span class="s2">&quot;exception </span><span class="si">#{</span><span class="n">e</span><span class="si">}</span><span class="s2"> found. This typically occurs when hive-metastore is not running. &quot;</span><span class="p">)</span>
+</span><span class='line'>    <span class="n">conditional_log</span><span class="p">(</span><span class="ss">:dead</span><span class="p">,</span> <span class="s1">&#39;try running `sudo service hive-metastore status`&#39;</span><span class="p">)</span>
+</span><span class='line'>    <span class="vi">@monitored_app_state</span> <span class="o">=</span> <span class="ss">:dead</span>
+</span><span class='line'>  <span class="k">ensure</span>
+</span><span class='line'>    <span class="n">socket</span><span class="o">.</span><span class="n">close</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'><span class="k">rescue</span> <span class="no">Timeout</span><span class="o">::</span><span class="no">Error</span>
+</span><span class='line'><span class="c1">## restart hive-metastore!!</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Hopefully this will help us avoid additional downtime with hive-metastore.</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Understanding Your Geoip Data]]></title>
