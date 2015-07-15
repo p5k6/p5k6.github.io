@@ -5,11 +5,11 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>Category: Dinner - Unintended Consequences</title>
+  <title>Fix Adium in Yosemite 10.10.4 - Unintended Consequences</title>
   <meta name="author" content="<a href="http://twitter.com/p5k6">Josh Stanfield</a>">
 
   
-  <meta name="description" content="Category: dinner">
+  <meta name="description" content="I recently (finally) upgraded to Yosemite on my work laptop. One of the programs I use frequently - Adium - would not start up (froze immediately &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -18,7 +18,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://p5k6.github.io/blog/categories/dinner">
+  <link rel="canonical" href="http://p5k6.github.io/blog/2015/07/15/fix-adium-in-yosemite-10-dot-10-dot-4">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="Unintended Consequences" type="application/atom+xml">
@@ -62,35 +62,108 @@
   <div id="main">
     <div id="content">
       <div>
-<article role="article">
+<article class="hentry" role="article">
   
   <header>
-    <h1 class="entry-title">Category: Dinner</h1>
+    
+      <h1 class="entry-title">Fix Adium in Yosemite 10.10.4</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2015-07-15T09:50:29-06:00" pubdate data-updated="true"></time>
+        
+      </p>
     
   </header>
-  
-  <div id="blog-archives" class="category">
 
 
+<div class="entry-content"><p>I recently (finally) upgraded to Yosemite on my work laptop. One of the programs I use frequently - Adium - would not start up (froze immediately upon startup).</p>
 
-  
-  <h2>2015</h2>
+<p>I found the issue - Bonjour announcement (enabled by default on Yosemite) <a href="https://trac.adium.im/ticket/16827">seems to interfere with Adium</a>. However - the fixes listed for this all applied to pre 10.10.4 Yosemite (i.e. when Yosemite was still using discoveryd).</p>
 
-<article>
-  
-<h1><a href="/blog/2015/06/18/pork-tenderloin-experience/">Pork Tenderloin Experience</a></h1>
-<time datetime="2015-06-18T12:14:47-06:00" pubdate><span class='month'>Jun</span> <span class='day'>18</span> <span class='year'>2015</span></time>
+<p>I fixed up by editing my mDNSResponder plist file</p>
 
-<footer>
-  <span class="categories">posted in <a class='category' href='/blog/categories/dinner/'>dinner</a>, <a class='category' href='/blog/categories/recipes/'>recipes</a>, <a class='category' href='/blog/categories/rice/'>rice</a>, <a class='category' href='/blog/categories/sides/'>sides</a></span>
-</footer>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>cp /System/Library/LaunchDaemons/com.apple.mDNSResponder.plist ~
+</span><span class='line'>sudo plutil -convert json /System/Library/LaunchDaemons/com.apple.mDNSResponder.plist
+</span><span class='line'>sudo vim /System/Library/LaunchDaemons/com.apple.mDNSResponder.plist</span></code></pre></td></tr></table></div></figure>
 
 
-</article>
+<p>When you edit the plist file, add &ldquo;-NoMulticastAdvertisements&rdquo; to the ProgramArguments array, so it looks like <code>ProgramArguments":["\/usr\/sbin\/mDNSResponder","-NoMulticastAdvertisements"]</code></p>
 
+<p>Then - convert back to binary and restart mDNSResponder</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>sudo plutil -convert binary1 /System/Library/LaunchDaemons/com.apple.mDNSResponder.plist
+</span><span class='line'>sudo killall -HUP mDNSResponder</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Restart Adium (you may need to do force quit/<code>kill -9</code>), and all should be good</p>
 </div>
 
+
+  <footer>
+    <p class="meta">
+      
   
+
+<span class="byline author vcard">Posted by <span class="fn"><a href="http://twitter.com/p5k6">Josh Stanfield</a></span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2015-07-15T09:50:29-06:00" pubdate data-updated="true"></time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/adium/'>adium</a>, <a class='category' href='/blog/categories/yosemite/'>yosemite</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://p5k6.github.io/blog/2015/07/15/fix-adium-in-yosemite-10-dot-10-dot-4/" data-via="p5k6" data-counturl="http://p5k6.github.io/blog/2015/07/15/fix-adium-in-yosemite-10-dot-10-dot-4/" >Tweet</a>
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2015/06/18/pork-tenderloin-experience/" title="Previous Post: Pork Tenderloin experience">&laquo; Pork Tenderloin experience</a>
+      
+      
+    </p>
+  </footer>
 </article>
 
 </div>

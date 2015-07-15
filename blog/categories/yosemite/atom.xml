@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Yosemite | Unintended Consequences]]></title>
+  <link href="http://p5k6.github.io/blog/categories/yosemite/atom.xml" rel="self"/>
+  <link href="http://p5k6.github.io/"/>
+  <updated>2015-07-15T10:26:16-06:00</updated>
+  <id>http://p5k6.github.io/</id>
+  <author>
+    <name><![CDATA[Josh Stanfield]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Fix Adium in Yosemite 10.10.4]]></title>
+    <link href="http://p5k6.github.io/blog/2015/07/15/fix-adium-in-yosemite-10-dot-10-dot-4/"/>
+    <updated>2015-07-15T09:50:29-06:00</updated>
+    <id>http://p5k6.github.io/blog/2015/07/15/fix-adium-in-yosemite-10-dot-10-dot-4</id>
+    <content type="html"><![CDATA[<p>I recently (finally) upgraded to Yosemite on my work laptop. One of the programs I use frequently - Adium - would not start up (froze immediately upon startup).</p>
+
+<p>I found the issue - Bonjour announcement (enabled by default on Yosemite) <a href="https://trac.adium.im/ticket/16827">seems to interfere with Adium</a>. However - the fixes listed for this all applied to pre 10.10.4 Yosemite (i.e. when Yosemite was still using discoveryd).</p>
+
+<p>I fixed up by editing my mDNSResponder plist file</p>
+
+<pre><code>cp /System/Library/LaunchDaemons/com.apple.mDNSResponder.plist ~
+sudo plutil -convert json /System/Library/LaunchDaemons/com.apple.mDNSResponder.plist
+sudo vim /System/Library/LaunchDaemons/com.apple.mDNSResponder.plist
+</code></pre>
+
+<p>When you edit the plist file, add &ldquo;-NoMulticastAdvertisements&rdquo; to the ProgramArguments array, so it looks like <code>ProgramArguments":["\/usr\/sbin\/mDNSResponder","-NoMulticastAdvertisements"]</code></p>
+
+<p>Then - convert back to binary and restart mDNSResponder
+<code>
+sudo plutil -convert binary1 /System/Library/LaunchDaemons/com.apple.mDNSResponder.plist
+sudo killall -HUP mDNSResponder
+</code></p>
+
+<p>Restart Adium (you may need to do force quit/<code>kill -9</code>), and all should be good</p>
+]]></content>
+  </entry>
+  
+</feed>
